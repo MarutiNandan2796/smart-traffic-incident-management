@@ -1,0 +1,16 @@
+﻿services:
+  - type: web
+    name: smart-traffic-incident-management
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn traffic_system.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: GEMINI_API_KEY
+        sync: false
