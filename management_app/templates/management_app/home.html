@@ -1,0 +1,451 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}City Traffic Surveillance & Safety Operations{% endblock %}
+
+{% block content %}
+<!-- Hero Command Banner -->
+<div class="hero-command mb-4">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.75rem;">
+          <span class="pulse-dot pulse-live me-1"></span> LIVE SURVEILLANCE
+        </span>
+        <span class="text-white-50 small">&bull; Municipal Traffic Command Center</span>
+      </div>
+      <h1 class="mb-2">Safer Corridors. Smarter Traffic Ops.</h1>
+      <p class="mb-4">Real-time incident response, traffic congestion analysis, and high-risk junction monitoring powered by civic sensor networks and verified citizen reporting.</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% if user.is_authenticated %}
+        <a href="{% url 'accident_create' %}" class="btn btn-warning fw-bold px-3 py-2 shadow-sm text-dark d-inline-flex align-items-center gap-2">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Report Accident
+        </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-light px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          Live Analytics Dashboard
+        </a>
+        <a href="{% url 'hotspots' %}" class="btn btn-outline-light px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+          Hotspot Risk Matrix
+        </a>
+        {% else %}
+        <a href="{% url 'login' %}" class="btn btn-warning fw-bold px-4 py-2 text-dark shadow-sm">
+          Access Command Console
+        </a>
+        <a href="{% url 'register' %}" class="btn btn-outline-light px-3 py-2 fw-semibold">
+          Create Citizen Account
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4 d-none d-lg-block text-end">
+      <div class="p-3 bg-dark bg-opacity-50 border border-secondary border-opacity-25 rounded-4 text-start shadow">
+        <div class="text-uppercase small fw-bold text-info mb-2 tracking-wide">Surveillance Status</div>
+        <div class="d-flex justify-content-between mb-2 small text-light">
+          <span>Active Corridors Monitored:</span>
+          <span class="fw-bold text-white">{{ locations.count }} Points</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2 small text-light">
+          <span>Control Room Link:</span>
+          <span class="text-success fw-bold">&bull; Online (99.98%)</span>
+        </div>
+        <div class="d-flex justify-content-between small text-light">
+          <span>Emergency Dispatch:</span>
+          <span class="text-warning fw-bold">Ready (103 / 112)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Civic Emergency Hotline & Real-Time Reporting Strip -->
+<div class="card card-clean mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border-left: 4px solid #10b981 !important;">
+  <div class="card-clean-body py-3 px-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center;" class="flex-shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <div>
+          <div class="fw-bold text-dark d-flex align-items-center gap-2">
+            <span>City Traffic Command & Citizen Emergency Portal</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle small">24x7 Active</span>
+          </div>
+          <div class="text-muted small">Dial <strong>103</strong> (Traffic Helpline) / <strong>112</strong> (Unified Emergency) or register to log road hazards in real time.</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        {% if user.is_authenticated %}
+        <a href="{% url 'accident_create' %}" class="btn btn-sm btn-primary-command fw-semibold px-3 py-2">
+          + Report Incident Now
+        </a>
+        {% else %}
+        <a href="{% url 'register' %}" class="btn btn-sm btn-success fw-semibold px-3 py-2">
+          Register Account &rarr;
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-2 bg-white">
+          Sign In
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 100% Clickable KPI Metric Cards -->
+<div class="row g-3 mb-4">
+  <!-- Card 1: Total Accidents -->
+  <div class="col-6 col-xl-3">
+    <a href="{% if user.is_authenticated %}{% url 'accident_list' %}{% else %}{% url 'login' %}{% endif %}" class="stat-kpi-card stat-kpi-blue" title="Click to view all accident reports">
+      <div class="stat-icon-wrapper">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <div class="stat-value">{{ counts.total_accidents }}</div>
+      <div class="stat-label">Accidents (30 Days)</div>
+      <div class="stat-footer">
+        <span>View incident registry</span>
+        <span>&rarr;</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Card 2: Fatal Cases -->
+  <div class="col-6 col-xl-3">
+    <a href="{% if user.is_authenticated %}{% url 'accident_list' %}?severity=Fatal{% else %}{% url 'login' %}{% endif %}" class="stat-kpi-card stat-kpi-red" title="Click to filter fatal collisions">
+      <div class="stat-icon-wrapper">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <div class="stat-value text-danger">{{ counts.fatal }}</div>
+      <div class="stat-label">Fatal Incidents</div>
+      <div class="stat-footer text-danger">
+        <span>Filter critical casualties</span>
+        <span>&rarr;</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Card 3: Average Speed -->
+  <div class="col-6 col-xl-3">
+    <a href="{% if user.is_authenticated %}{% url 'congestion_list' %}{% else %}{% url 'login' %}{% endif %}" class="stat-kpi-card stat-kpi-amber" title="Click to inspect city traffic flow">
+      <div class="stat-icon-wrapper">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+      <div class="stat-value">{{ counts.avg_speed }} <small class="fs-6 fw-normal text-muted">km/h</small></div>
+      <div class="stat-label">Corridor Avg Speed</div>
+      <div class="stat-footer text-warning">
+        <span>Inspect congestion logs</span>
+        <span>&rarr;</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Card 4: Open Cases -->
+  <div class="col-6 col-xl-3">
+    <a href="{% if user.is_authenticated %}{% url 'accident_list' %}?status=Reported{% else %}{% url 'login' %}{% endif %}" class="stat-kpi-card stat-kpi-sky" title="Click to view pending investigations">
+      <div class="stat-icon-wrapper">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      </div>
+      <div class="stat-value">{{ counts.open_cases }}</div>
+      <div class="stat-label">Pending Investigations</div>
+      <div class="stat-footer">
+        <span>Review open cases</span>
+        <span>&rarr;</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- Interactive City Map & Incident Feed Row -->
+<div class="row g-4 mb-4">
+  <!-- Interactive City Traffic Map -->
+  <div class="col-xl-8">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          <h5 class="mb-0">Interactive City Corridor Surveillance Map</h5>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-secondary border small d-none d-sm-inline">Click markers for details</span>
+          {% if user.is_authenticated %}
+          <a href="{% url 'accident_list' %}" class="btn btn-outline-secondary btn-sm">Full Registry &rarr;</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-clean-body p-0">
+        <div id="cityMap" class="map-canvas-container" style="height: 420px; border-radius: 0 0 14px 14px; border: none;"></div>
+      </div>
+      <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+        <div class="d-flex align-items-center gap-3">
+          <span class="d-inline-flex align-items-center gap-1"><span class="badge rounded-circle p-1 bg-danger"> </span> High Risk / Fatal Spot</span>
+          <span class="d-inline-flex align-items-center gap-1"><span class="badge rounded-circle p-1 bg-warning"> </span> Heavy Jam Corridor</span>
+          <span class="d-inline-flex align-items-center gap-1"><span class="badge rounded-circle p-1 bg-primary"> </span> Moderate Flow</span>
+        </div>
+        <span class="text-muted">Spatial coordinate tracking enabled</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Traffic Alerts Feed -->
+  <div class="col-xl-4">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <h5 class="mb-0">Live Traffic Alerts</h5>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'alert_list' %}" class="small fw-semibold text-primary">All Alerts &rarr;</a>
+        {% endif %}
+      </div>
+      <div class="card-clean-body p-3">
+        <!-- Alert Priority Tabs -->
+        <div class="btn-group w-100 mb-3" role="group">
+          <button type="button" class="btn btn-sm btn-outline-secondary active filter-alert-btn" data-filter="all">All</button>
+          <button type="button" class="btn btn-sm btn-outline-danger filter-alert-btn" data-filter="Critical">Critical</button>
+          <button type="button" class="btn btn-sm btn-outline-warning filter-alert-btn" data-filter="Warning">Warning</button>
+          <button type="button" class="btn btn-sm btn-outline-info filter-alert-btn" data-filter="Info">Advisory</button>
+        </div>
+
+        <div class="alerts-stream" style="max-height: 340px; overflow-y: auto;">
+          {% for a in alerts %}
+          <div class="alert-box-card alert-{{ a.priority }} alert-item-box" data-priority="{{ a.priority }}">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong class="text-dark small">{{ a.title }}</strong>
+              <span class="badge badge-status badge-{{ a.priority }}">{{ a.priority }}</span>
+            </div>
+            <p class="small text-secondary mb-2">{{ a.message }}</p>
+            <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.73rem;">
+              <span>{% if a.location %}📍 {{ a.location.name }}{% endif %}</span>
+              <span>{{ a.created_at|timesince }} ago</span>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <p class="mb-0 small">No active advisories right now.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Latest Accident Registry & Hotspots Preview -->
+<div class="row g-4">
+  <!-- Latest Reports -->
+  <div class="col-lg-7">
+    <div class="card card-clean">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          <h5 class="mb-0">Recent Accident Incident Reports</h5>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'accident_list' %}" class="btn btn-sm btn-outline-primary">View All &rarr;</a>
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-command align-middle">
+          <thead>
+            <tr>
+              <th>Incident Details</th>
+              <th>Location</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in latest %}
+            <tr>
+              <td>
+                <a href="{% if user.is_authenticated %}{% url 'accident_detail' a.pk %}{% else %}{% url 'login' %}{% endif %}" class="fw-bold text-dark d-block">
+                  {{ a.title }}
+                </a>
+                <small class="text-muted">{{ a.occurred_at|date:"d M, h:i A" }} &bull; {{ a.vehicles_involved }} vehicle(s)</small>
+              </td>
+              <td>
+                <span class="fw-semibold text-secondary">{{ a.location.name }}</span><br>
+                <small class="text-muted">{{ a.location.zone }} Zone</small>
+              </td>
+              <td>
+                <span class="badge badge-status badge-{{ a.severity }}">
+                  <span class="pulse-dot"></span> {{ a.severity }}
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-status badge-{{ a.status|cut:' ' }}">
+                  {{ a.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <a href="{% if user.is_authenticated %}{% url 'accident_detail' a.pk %}{% else %}{% url 'login' %}{% endif %}" class="btn btn-sm btn-outline-secondary">
+                  Inspect &rarr;
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No accident records registered yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Hotspots Preview -->
+  <div class="col-lg-5">
+    <div class="card card-clean">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+          <h5 class="mb-0">Critical Risk Hotspots</h5>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'hotspots' %}" class="small fw-semibold text-primary">Full Matrix &rarr;</a>
+        {% endif %}
+      </div>
+      <div class="card-clean-body p-3">
+        {% for r in hotspots %}
+        <div class="p-3 mb-2 rounded-3 border bg-white shadow-sm">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <div>
+              <strong class="text-dark">{{ r.location.name }}</strong>
+              <small class="text-muted d-block">{{ r.location.zone }} Zone &bull; {{ r.accidents }} accidents ({{ r.fatal }} fatal)</small>
+            </div>
+            <span class="badge bg-danger rounded-pill px-2 py-1">Score {{ r.score }}</span>
+          </div>
+          <div class="mt-2 pt-2 border-top">
+            <small class="text-secondary fw-semibold">Action Directive:</small>
+            <ul class="mb-2 mt-1 small ps-3 text-muted">
+              {% for t in r.tips|slice:":2" %}<li>{{ t }}</li>{% endfor %}
+            </ul>
+            {% if user.is_authenticated %}
+            <a href="{% url 'accident_list' %}?location={{ r.location.id }}" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 0.75rem;">
+              Filter Incidents Here &rarr;
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-3">Not enough incident data to rank hotspots.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter alert cards by priority
+document.querySelectorAll('.filter-alert-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-alert-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.alert-item-box').forEach(box => {
+      if (filter === 'all' || box.dataset.priority === filter) {
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    });
+  });
+});
+
+// Interactive Leaflet Map for City Corridors
+document.addEventListener('DOMContentLoaded', function() {
+  const mapContainer = document.getElementById('cityMap');
+  if (!mapContainer) return;
+
+  // Initialize Map centered on Amritsar coordinates
+  const map = L.map('cityMap', {
+    scrollWheelZoom: false
+  }).setView([31.6340, 74.8723], 13);
+
+  // Professional High-Definition GIS Layers (100% Free, No Watermark, No Key Required)
+  const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: '&copy; Esri &mdash; City Surveillance GIS'
+  }).addTo(map);
+
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: '&copy; Esri Satellite'
+  });
+
+  // Interactive Layer Switcher (Streets vs Satellite)
+  L.control.layers({ "🗺️ City Streets": streetLayer, "🛰️ Satellite View": satelliteLayer }, null, { position: 'topright' }).addTo(map);
+
+  // Fetch live location points from API
+  fetch("{% if user.is_authenticated %}{% url 'api_map_data' %}{% else %}#{% endif %}")
+    .then(res => {
+      if (!res.ok) throw new Error('API unavailable or guest');
+      return res.json();
+    })
+    .then(data => {
+      if (!data.locations || !data.locations.length) return;
+      
+      const bounds = [];
+      data.locations.forEach(loc => {
+        bounds.push([loc.lat, loc.lng]);
+        
+        // Pin color determination
+        let pinColor = '#2563eb';
+        if (loc.fatal > 0 || loc.risk_score >= 18) {
+          pinColor = '#e11d48';
+        } else if (loc.risk_score >= 10 || loc.latest_level >= 3) {
+          pinColor = '#f59e0b';
+        }
+
+        const markerHtml = `<div style="background-color:${pinColor}; width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`;
+        const customIcon = L.divIcon({
+          html: markerHtml,
+          className: 'custom-map-pin',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+
+        const popupContent = `
+          <div style="font-family: system-ui, sans-serif; padding: 4px; min-width: 190px;">
+            <strong style="font-size: 0.95rem; color: #0f172a;">${loc.name}</strong>
+            <div style="color: #64748b; font-size: 0.78rem; margin-bottom: 6px;">${loc.zone} Zone</div>
+            <div style="font-size: 0.8rem; margin-bottom: 3px;">⚠️ <strong>Accidents:</strong> ${loc.accidents} (${loc.fatal} fatal)</div>
+            <div style="font-size: 0.8rem; margin-bottom: 6px;">🚗 <strong>Congestion:</strong> ${loc.latest_level_name} (${loc.latest_speed} km/h)</div>
+            <div style="font-size: 0.8rem; margin-bottom: 8px;">🔥 <strong>Risk Score:</strong> <span style="color:#e11d48; font-weight:bold;">${loc.risk_score}</span></div>
+            <a href="{% url 'accident_list' %}?location=${loc.id}" style="display:inline-block; font-size:0.75rem; background:#2563eb; color:#fff; text-decoration:none; padding:4px 8px; border-radius:5px; font-weight:600;">View Incidents Here &rarr;</a>
+          </div>
+        `;
+        marker.bindPopup(popupContent);
+      });
+
+      if (bounds.length) {
+        map.fitBounds(bounds, { padding: [25, 25] });
+      }
+    })
+    .catch(() => {
+      // Fallback pins if guest or offline
+      const staticPlaces = [
+        { name: "Bus Stand Chowk", lat: 31.6340, lng: 74.8723, color: "#e11d48", label: "High Hazard" },
+        { name: "GT Road Crossing", lat: 31.6500, lng: 74.8800, color: "#e11d48", label: "Signal Critical" },
+        { name: "Mall Road Junction", lat: 31.6410, lng: 74.8590, color: "#f59e0b", label: "Peak Congestion" },
+        { name: "Railway Station Road", lat: 31.6260, lng: 74.8650, color: "#2563eb", label: "Moderate Traffic" },
+        { name: "Market Square", lat: 31.6330, lng: 74.8770, color: "#2563eb", label: "Active" }
+      ];
+      staticPlaces.forEach(p => {
+        const markerHtml = `<div style="background-color:${p.color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`;
+        const icon = L.divIcon({ html: markerHtml, className: 'custom-map-pin', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([p.lat, p.lng], { icon: icon }).addTo(map).bindPopup(`<strong>${p.name}</strong><br><small>${p.label}</small>`);
+      });
+    });
+});
+</script>
+{% endblock %}

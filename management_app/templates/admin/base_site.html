@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | TrafficSafe Control Room{% endblock %}
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}"><span class="admin-brand-mark">TS</span> TrafficSafe <em>Control Room</em></a></h1>
+{% endblock %}
+{% block nav-global %}
+<div class="admin-quick-links"><a href="{% url 'control_room' %}">Control room</a><a href="{% url 'live_traffic' %}">Live traffic</a><a href="{% url 'home' %}">View site</a></div>
+{% endblock %}

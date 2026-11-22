@@ -1,0 +1,131 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Create Citizen Account | TrafficSafe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-md-7 col-lg-6 col-xl-5">
+    <div class="card card-clean shadow-lg border-0" style="border-radius: 16px;">
+      <div class="card-clean-body p-4 p-sm-5">
+        <!-- Brand Header -->
+        <div class="text-center mb-4">
+          <div class="brand-icon-box mx-auto mb-3" style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          </div>
+          <h4 class="fw-bold text-dark mb-1">Create Citizen Profile</h4>
+          <p class="text-muted small">Join TrafficSafe to broadcast incidents and track road safety.</p>
+        </div>
+
+        <form method="post" class="styled-form" novalidate>
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger p-3 mb-3 small d-flex align-items-center gap-2" style="border-radius: 10px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div>{{ form.non_field_errors|join:" " }}</div>
+          </div>
+          {% endif %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-sm-6">
+              <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                First Name <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </span>
+                {{ form.first_name }}
+              </div>
+              {% if form.first_name.errors %}
+              <div class="text-danger small mt-1">{{ form.first_name.errors|join:" " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-sm-6">
+              <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                Last Name <span class="text-muted fw-normal">(Optional)</span>
+              </label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+              <div class="text-danger small mt-1">{{ form.last_name.errors|join:" " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.username.id_for_label }}" class="form-label">
+              Username <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted">@</span>
+              {{ form.username }}
+            </div>
+            {% if form.username.errors %}
+            <div class="text-danger small mt-1">{{ form.username.errors|join:" " }}</div>
+            {% else %}
+            <div class="text-muted small mt-1" style="font-size: 0.78rem;">Use letters, numbers, and @/./+/-/_ only.</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.email.id_for_label }}" class="form-label">
+              Official Email <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </span>
+              {{ form.email }}
+            </div>
+            {% if form.email.errors %}
+            <div class="text-danger small mt-1">{{ form.email.errors|join:" " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.password1.id_for_label }}" class="form-label">
+              Password <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              {{ form.password1 }}
+            </div>
+            {% if form.password1.errors %}
+            <div class="text-danger small mt-1">{{ form.password1.errors|join:" " }}</div>
+            {% else %}
+            <div class="text-muted small mt-1" style="font-size: 0.78rem;">Minimum 8 characters. Cannot be all numeric.</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label for="{{ form.password2.id_for_label }}" class="form-label">
+              Confirm Password <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              {{ form.password2 }}
+            </div>
+            {% if form.password2.errors %}
+            <div class="text-danger small mt-1">{{ form.password2.errors|join:" " }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary-command w-100 justify-content-center py-2 fs-6">
+            Create Citizen Account &rarr;
+          </button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top small">
+          <span class="text-muted">Already have an authorized profile?</span><br>
+          <a href="{% url 'login' %}" class="fw-bold text-primary">Sign In to Command Portal</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

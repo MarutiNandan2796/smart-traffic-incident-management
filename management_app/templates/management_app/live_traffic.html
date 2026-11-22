@@ -1,0 +1,28 @@
+{% extends 'management_app/base.html' %}
+{% block title %}Live Traffic{% endblock %}
+{% block content %}
+<div class="monitor-header mb-4">
+  <div><span class="eyebrow"><span class="pulse-dot"></span> REAL-TIME OPERATIONS</span><h1>Live traffic monitor</h1><p class="mb-0">Latest congestion reading from every monitored location.</p></div>
+  <div class="text-md-end"><div class="last-updated">Updated <span id="updatedAt">{{ updated_at|date:'d M, h:i A' }}</span></div><button id="refreshTraffic" class="btn btn-light btn-sm mt-2">Refresh now</button></div>
+</div>
+<div id="trafficGrid" class="row g-3">
+  {% for row in traffic %}
+  <div class="col-md-6 col-xl-4 traffic-card-wrap"><article class="traffic-card card lvl-border-{{ row.level }}"><div class="d-flex justify-content-between"><div><span class="zone-label">{{ row.location.zone }} zone</span><h5>{{ row.location.name }}</h5></div><span class="traffic-level lvl-{{ row.level }}">{{ row.level_label }}</span></div><div class="speed-readout"><strong>{{ row.average_speed }}</strong><span>km/h<br><small>average speed</small></span></div><div class="traffic-meta"><span>{{ row.cause }}</span><time datetime="{{ row.reported_at|date:'c' }}">{{ row.reported_at|date:'d M, h:i A' }}</time></div></article></div>
+  {% empty %}<div class="col-12"><div class="empty-state card"><h4>No live readings yet</h4><p>Traffic operators can add a congestion report to populate this monitor.</p><a class="btn btn-primary" href="{% url 'congestion_create' %}">Add traffic reading</a></div></div>{% endfor %}
+</div>
+<div id="trafficStatus" class="small text-muted mt-3"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const trafficEndpoint = "{% url 'api_live_traffic' %}";
+const trafficGrid = document.getElementById('trafficGrid');
+const updatedAt = document.getElementById('updatedAt');
+const trafficStatus = document.getElementById('trafficStatus');
+function renderTraffic(rows) {
+  trafficGrid.innerHTML = rows.length ? rows.map(row => `<div class="col-md-6 col-xl-4 traffic-card-wrap"><article class="traffic-card card lvl-border-${row.level}"><div class="d-flex justify-content-between"><div><span class="zone-label">${row.zone} zone</span><h5>${row.location}</h5></div><span class="traffic-level lvl-${row.level}">${row.level_label}</span></div><div class="speed-readout"><strong>${row.average_speed}</strong><span>km/h<br><small>average speed</small></span></div><div class="traffic-meta"><span>${row.cause}</span><time>${new Date(row.reported_at).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</time></div></article></div>`).join('') : '<div class="col-12"><div class="empty-state card"><h4>No live readings yet</h4><p>Add a congestion report to populate this monitor.</p></div></div>';
+}
+async function refreshTraffic() { try { const response = await fetch(trafficEndpoint); const data = await response.json(); renderTraffic(data.traffic); updatedAt.textContent = new Date(data.updated_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); trafficStatus.textContent = 'Live data refreshed just now'; } catch (error) { trafficStatus.textContent = 'Unable to refresh live data right now.'; } }
+document.getElementById('refreshTraffic').addEventListener('click', refreshTraffic);
+setInterval(refreshTraffic, 30000);
+</script>
+{% endblock %}

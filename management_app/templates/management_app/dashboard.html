@@ -1,0 +1,456 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Analytics Command Dashboard{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header & Interactive Controls -->
+<div class="card card-clean mb-4">
+  <div class="card-clean-body py-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-primary text-white px-2 py-1">SURVEILLANCE METRICS</span>
+          <span class="text-muted small">&bull; Real-Time Data Pipeline</span>
+        </div>
+        <h4 class="mb-0 fw-bold">Traffic & Incident Analytics Center</h4>
+      </div>
+      
+      <!-- Interactive Toolbar -->
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Date Horizon Filter -->
+        <div class="btn-group btn-group-sm" role="group" aria-label="Date filter">
+          <a href="?days=7" class="btn btn-outline-secondary {% if selected_days == 7 %}active fw-bold{% endif %}">7 Days</a>
+          <a href="?days=14" class="btn btn-outline-secondary {% if selected_days == 14 %}active fw-bold{% endif %}">14 Days</a>
+          <a href="?days=30" class="btn btn-outline-secondary {% if selected_days == 30 %}active fw-bold{% endif %}">30 Days</a>
+        </div>
+
+        <!-- Refresh Button -->
+        <button type="button" class="btn btn-secondary-command btn-sm" id="btnRefreshCharts" title="Reload live chart datasets">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" id="refreshSpinner"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+          <span class="d-none d-sm-inline">Refresh Data</span>
+        </button>
+
+        <!-- CSV Export -->
+        <a href="{% url 'export_hotspots_csv' %}" class="btn btn-export-csv btn-sm" title="Download Hotspot Analysis CSV">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Export CSV
+        </a>
+
+        <!-- Quick Action Buttons -->
+        <a href="{% url 'accident_create' %}" class="btn btn-primary-command btn-sm">
+          + Report Accident
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6 Interactive KPI Cards -->
+<div class="row g-3 mb-4">
+  <!-- 1: Total Accidents -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'accident_list' %}" class="stat-kpi-card stat-kpi-blue" title="Click to view all accidents">
+      <div class="stat-value">{{ counts.total_accidents }}</div>
+      <div class="stat-label">Accidents</div>
+      <div class="stat-footer"><span>Registry</span> &rarr;</div>
+    </a>
+  </div>
+
+  <!-- 2: Fatal -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'accident_list' %}?severity=Fatal" class="stat-kpi-card stat-kpi-red" title="Click to filter fatal collisions">
+      <div class="stat-value text-danger">{{ counts.fatal }}</div>
+      <div class="stat-label">Fatalities</div>
+      <div class="stat-footer text-danger"><span>Fatal cases</span> &rarr;</div>
+    </a>
+  </div>
+
+  <!-- 3: Injuries -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'accident_list' %}" class="stat-kpi-card stat-kpi-amber" title="Click to review injured parties">
+      <div class="stat-value text-warning">{{ counts.injuries }}</div>
+      <div class="stat-label">Injuries</div>
+      <div class="stat-footer text-warning"><span>Casualties</span> &rarr;</div>
+    </a>
+  </div>
+
+  <!-- 4: Avg Speed -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'congestion_list' %}" class="stat-kpi-card stat-kpi-green" title="Click to inspect speeds">
+      <div class="stat-value text-success">{{ counts.avg_speed }} <small class="fs-6 fw-normal">km/h</small></div>
+      <div class="stat-label">Corridor Speed</div>
+      <div class="stat-footer text-success"><span>Speed logs</span> &rarr;</div>
+    </a>
+  </div>
+
+  <!-- 5: Severe Jams -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'congestion_list' %}?level=4" class="stat-kpi-card stat-kpi-red" title="Click to view gridlocks">
+      <div class="stat-value text-danger">{{ counts.severe_reports }}</div>
+      <div class="stat-label">Gridlocks (Lvl 4)</div>
+      <div class="stat-footer text-danger"><span>Bottlenecks</span> &rarr;</div>
+    </a>
+  </div>
+
+  <!-- 6: My Reports -->
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'accident_list' %}?mine=1" class="stat-kpi-card stat-kpi-sky" title="Click to view your submitted reports">
+      <div class="stat-value text-info">{{ my_reports }}</div>
+      <div class="stat-label">My Submissions</div>
+      <div class="stat-footer text-info"><span>My logs</span> &rarr;</div>
+    </a>
+  </div>
+</div>
+
+<!-- 4 Rich Interactive Visualizations -->
+<div class="row g-4 mb-4">
+  <!-- Chart 1: Accident Daily Trajectory -->
+  <div class="col-lg-8">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div>
+          <h6 class="mb-0 fw-bold">Incident Timeline Frequency</h6>
+          <small class="text-muted">Daily distribution of road collisions over the selected horizon</small>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-secondary active" id="btnChartBar">Bar</button>
+          <button type="button" class="btn btn-outline-secondary" id="btnChartLine">Line</button>
+        </div>
+      </div>
+      <div class="card-clean-body">
+        <div class="chart-box" style="height: 290px;">
+          <canvas id="perDay"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 2: Severity Distribution -->
+  <div class="col-lg-4">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div>
+          <h6 class="mb-0 fw-bold">Severity Breakdown</h6>
+          <small class="text-muted">Minor vs Major vs Fatal ratio</small>
+        </div>
+        <span class="badge bg-light text-secondary border">Share %</span>
+      </div>
+      <div class="card-clean-body">
+        <div class="chart-box" style="height: 290px;">
+          <canvas id="severity"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 3: Peak Rush Hour Congestion Curve -->
+  <div class="col-lg-7">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div>
+          <h6 class="mb-0 fw-bold">Diurnal Congestion Density Curve (24 Hours)</h6>
+          <small class="text-muted">Average congestion score (1: Free Flow &rarr; 4: Severe Gridlock)</small>
+        </div>
+        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Rush Peak Analysis</span>
+      </div>
+      <div class="card-clean-body">
+        <div class="chart-box" style="height: 290px;">
+          <canvas id="byHour"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 4: Top Hazard Junctions -->
+  <div class="col-lg-5">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div>
+          <h6 class="mb-0 fw-bold">Hazard Risk Ranking</h6>
+          <small class="text-muted">Composite score: Accidents &times; 2 + Congestion density</small>
+        </div>
+        <a href="{% url 'hotspots' %}" class="small text-primary fw-semibold">All Hotspots &rarr;</a>
+      </div>
+      <div class="card-clean-body">
+        <div class="chart-box" style="height: 290px;">
+          <canvas id="hot"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Priority Hotspot Action Directives -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="mb-0 fw-bold">High-Risk Junction Action Directives</h5>
+    <small class="text-muted">Prioritized enforcement directives based on collision frequency and speed telemetry</small>
+  </div>
+  <a href="{% url 'hotspots' %}" class="btn btn-outline-secondary btn-sm">Full Hotspot Matrix &rarr;</a>
+</div>
+
+<div class="row g-3">
+  {% for r in hotspots %}
+  <div class="col-md-6 col-xl-3">
+    <div class="card card-clean h-100">
+      <div class="card-clean-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <strong class="d-block text-dark">{{ r.location.name }}</strong>
+            <span class="badge bg-secondary-subtle text-secondary border small">{{ r.location.zone }} Zone</span>
+          </div>
+          <span class="badge bg-danger rounded-pill px-2 py-1">Score {{ r.score }}</span>
+        </div>
+        
+        <div class="small text-muted mb-2">
+          <span>⚠️ <strong>{{ r.accidents }}</strong> accidents</span> &bull; 
+          <span class="text-danger"><strong>{{ r.fatal }}</strong> fatal</span>
+        </div>
+
+        <div class="p-2 rounded bg-light border small flex-grow-1 mb-3">
+          <strong class="d-block text-dark mb-1" style="font-size: 0.76rem;">Directive:</strong>
+          <ul class="mb-0 ps-3 text-secondary" style="font-size: 0.78rem;">
+            {% for t in r.tips %}<li>{{ t }}</li>{% endfor %}
+          </ul>
+        </div>
+
+        <div class="d-flex gap-2 mt-auto">
+          <a href="{% url 'accident_list' %}?location={{ r.location.id }}" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 0.78rem;">
+            View Incidents
+          </a>
+          <a href="{% url 'congestion_create' %}" class="btn btn-outline-secondary btn-sm" style="font-size: 0.78rem;" title="Report traffic jam here">
+            + Jam
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12"><div class="card card-clean p-4 text-center text-muted">No hotspot data available for this range.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/chart.umd.js' %}"></script>
+<script>
+let chartPerDay, chartSeverity, chartByHour, chartHot;
+let currentDayChartType = 'bar';
+let cachedData = null;
+
+function renderCharts(d) {
+  cachedData = d;
+  
+  // Chart 1: Per Day
+  if (chartPerDay) chartPerDay.destroy();
+  const ctxPerDay = document.getElementById('perDay').getContext('2d');
+  chartPerDay = new Chart(ctxPerDay, {
+    type: currentDayChartType,
+    data: {
+      labels: d.per_day.labels,
+      datasets: [{
+        label: 'Daily Accidents',
+        data: d.per_day.values,
+        backgroundColor: currentDayChartType === 'bar' ? '#2563eb' : 'rgba(37, 99, 235, 0.15)',
+        borderColor: '#2563eb',
+        borderWidth: 2,
+        borderRadius: currentDayChartType === 'bar' ? 4 : 0,
+        fill: currentDayChartType === 'line',
+        tension: 0.35,
+        pointBackgroundColor: '#2563eb',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { weight: 'bold' },
+          padding: 10,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: '#64748b' },
+          grid: { color: '#f1f5f9' }
+        },
+        x: {
+          ticks: { color: '#64748b', maxRotation: 45 },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // Chart 2: Severity Distribution
+  if (chartSeverity) chartSeverity.destroy();
+  const ctxSeverity = document.getElementById('severity').getContext('2d');
+  chartSeverity = new Chart(ctxSeverity, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(d.severity),
+      datasets: [{
+        data: Object.values(d.severity),
+        backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { boxWidth: 12, font: { weight: '600' } }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          cornerRadius: 8
+        }
+      },
+      cutout: '68%'
+    }
+  });
+
+  // Chart 3: Congestion by Hour
+  if (chartByHour) chartByHour.destroy();
+  const ctxByHour = document.getElementById('byHour').getContext('2d');
+  chartByHour = new Chart(ctxByHour, {
+    type: 'line',
+    data: {
+      labels: d.by_hour.labels,
+      datasets: [{
+        label: 'Average Congestion Level',
+        data: d.by_hour.values,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#f59e0b'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          padding: 10,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 4,
+          ticks: {
+            stepSize: 1,
+            color: '#64748b',
+            callback: function(v) {
+              const labels = ['Clear (0)', 'Low (1)', 'Moderate (2)', 'Heavy (3)', 'Severe (4)'];
+              return labels[v] || v;
+            }
+          },
+          grid: { color: '#f1f5f9' }
+        },
+        x: {
+          ticks: { color: '#64748b' },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // Chart 4: Hotspots Horizontal Bar
+  if (chartHot) chartHot.destroy();
+  const ctxHot = document.getElementById('hot').getContext('2d');
+  chartHot = new Chart(ctxHot, {
+    type: 'bar',
+    data: {
+      labels: d.hotspots.map(h => h.name),
+      datasets: [{
+        label: 'Hazard Risk Score',
+        data: d.hotspots.map(h => h.score),
+        backgroundColor: '#f43f5e',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { color: '#64748b' },
+          grid: { color: '#f1f5f9' }
+        },
+        y: {
+          ticks: { color: '#0f172a', font: { weight: '600' } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// Fetch stats and initialize
+function loadChartData() {
+  const spinner = document.getElementById('refreshSpinner');
+  if (spinner) spinner.style.animation = 'spin 0.7s linear infinite';
+  
+  fetch("{% url 'api_stats' %}?days={{ selected_days }}")
+    .then(r => r.json())
+    .then(d => {
+      renderCharts(d);
+      if (spinner) spinner.style.animation = '';
+    })
+    .catch(err => {
+      console.error('Failed to load stats:', err);
+      if (spinner) spinner.style.animation = '';
+    });
+}
+
+// Toggle Bar/Line for Day chart
+document.getElementById('btnChartBar').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('btnChartLine').classList.remove('active');
+  currentDayChartType = 'bar';
+  if (cachedData) renderCharts(cachedData);
+});
+document.getElementById('btnChartLine').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('btnChartBar').classList.remove('active');
+  currentDayChartType = 'line';
+  if (cachedData) renderCharts(cachedData);
+});
+
+// Refresh button event
+document.getElementById('btnRefreshCharts').addEventListener('click', loadChartData);
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', loadChartData);
+</script>
+<style>
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

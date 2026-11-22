@@ -1,0 +1,140 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Traffic Alerts & Advisories{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge bg-danger text-white px-2 py-1">PUBLIC BROADCASTING</span>
+      <span class="text-muted small">&bull; {{ counts.active }} active advisories</span>
+    </div>
+    <h3 class="fw-bold mb-0">City Traffic Advisories & Road Alerts</h3>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    {% if user.is_staff %}
+    <a href="{% url 'alert_create' %}" class="btn btn-primary-command btn-sm">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      + Broadcast New Alert
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Priority Filter Tabs -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{% url 'alert_list' %}" class="btn btn-sm {% if not selected_priority and not selected_status %}btn-dark{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    All ({{ counts.total }})
+  </a>
+  <a href="{% url 'alert_list' %}?status=active" class="btn btn-sm {% if selected_status == 'active' %}btn-primary{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    🟢 Live Active ({{ counts.active }})
+  </a>
+  <a href="{% url 'alert_list' %}?priority=Critical" class="btn btn-sm {% if selected_priority == 'Critical' %}btn-danger{% else %}btn-outline-danger bg-white{% endif %} py-1 px-3 rounded-pill">
+    🔴 Critical Emergencies ({{ counts.critical }})
+  </a>
+  <a href="{% url 'alert_list' %}?priority=Warning" class="btn btn-sm {% if selected_priority == 'Warning' %}btn-warning text-dark{% else %}btn-outline-warning text-dark bg-white{% endif %} py-1 px-3 rounded-pill">
+    🟡 Road Warnings ({{ counts.warning }})
+  </a>
+  <a href="{% url 'alert_list' %}?priority=Info" class="btn btn-sm {% if selected_priority == 'Info' %}btn-info text-white{% else %}btn-outline-info bg-white{% endif %} py-1 px-3 rounded-pill">
+    🔵 General Advisories ({{ counts.info }})
+  </a>
+</div>
+
+<!-- Alerts Grid -->
+<div class="row g-3">
+  {% for a in alerts %}
+  <div class="col-lg-6">
+    <div class="card card-clean h-100 {% if not a.is_active %}opacity-75 bg-light{% endif %}" style="border-left: 5px solid {% if a.priority == 'Critical' %}#e11d48{% elif a.priority == 'Warning' %}#f59e0b{% else %}#0284c7{% endif %};">
+      <div class="card-clean-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h5 class="fw-bold text-dark mb-1">{{ a.title }}</h5>
+            <small class="text-muted">
+              {% if a.location %}📍 <strong>{{ a.location.name }}</strong> ({{ a.location.zone }} Zone) &bull; {% endif %}
+              {{ a.created_at|date:"d M Y, h:i A" }}
+            </small>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <span class="badge badge-status badge-{{ a.priority }}">
+              <span class="pulse-dot {% if a.is_active and a.priority == 'Critical' %}pulse-live{% endif %}"></span>
+              {{ a.priority }}
+            </span>
+            {% if not a.is_active %}
+            <span class="badge bg-secondary">Closed</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <p class="text-secondary fs-6 mb-3 flex-grow-1" style="white-space: pre-line;">{{ a.message }}</p>
+
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+          <small class="text-muted">
+            Published by <strong>{{ a.created_by.get_full_name|default:a.created_by.username }}</strong>
+          </small>
+
+          <div class="d-flex gap-2">
+            <!-- Copy Advisory Button -->
+            <button type="button" class="btn btn-outline-secondary btn-sm copy-alert-btn" data-text="{{ a.title }}: {{ a.message }}" title="Copy alert text to share">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copy
+            </button>
+
+            {% if user.is_staff %}
+            <!-- Toggle Active / Closed -->
+            <form method="post" action="{% url 'alert_toggle' a.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm {% if a.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                {% if a.is_active %}Close Advisory{% else %}Re-activate{% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="card card-clean p-5 text-center text-muted">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <h5 class="fw-bold text-dark">No Active Advisories Found</h5>
+      <p class="small mb-3">All municipal corridors are currently operating without reported emergency diversions.</p>
+      {% if user.is_staff %}
+      <div><a href="{% url 'alert_create' %}" class="btn btn-primary-command btn-sm">+ Broadcast an Advisory</a></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Copy Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+  <div id="copyToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body small">
+        📋 Advisory copied to clipboard! Ready to share.
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.copy-alert-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const text = btn.dataset.text;
+    navigator.clipboard.writeText(text).then(() => {
+      const toastEl = document.getElementById('copyToast');
+      const toast = new bootstrap.Toast(toastEl, { delay: 2500 });
+      toast.show();
+    }).catch(() => {
+      alert('Alert text: ' + text);
+    });
+  });
+});
+</script>
+{% endblock %}

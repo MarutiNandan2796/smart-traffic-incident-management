@@ -1,0 +1,116 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}User Profile & Security Settings{% endblock %}
+
+{% block content %}
+<!-- Profile Header Summary Banner -->
+<div class="card card-clean mb-4">
+  <div class="card-clean-body p-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+      <div class="user-avatar-badge" style="width: 60px; height: 60px; font-size: 1.5rem; background: #1e3a8a;">
+        {{ user.first_name|first|default:user.username|first|upper }}
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h4 class="fw-bold mb-0 text-dark">{{ user.get_full_name|default:user.username }}</h4>
+          {% if user.is_staff %}
+          <span class="badge bg-danger">Traffic Authority (Admin)</span>
+          {% else %}
+          <span class="badge bg-primary">Registered Reporter</span>
+          {% endif %}
+        </div>
+        <div class="text-muted small">
+          Username: <code>@{{ user.username }}</code> &bull; Email: <strong>{{ user.email }}</strong> &bull; Member since {{ user.date_joined|date:"M Y" }}
+        </div>
+      </div>
+      <div class="ms-md-auto d-flex gap-2">
+        <div class="p-2 px-3 rounded bg-light border text-center">
+          <div class="fw-bold text-dark fs-5">{{ reports_count }}</div>
+          <small class="text-muted" style="font-size: 0.72rem; text-transform: uppercase;">Accidents Filed</small>
+        </div>
+        <div class="p-2 px-3 rounded bg-light border text-center">
+          <div class="fw-bold text-dark fs-5">{{ congestion_count }}</div>
+          <small class="text-muted" style="font-size: 0.72rem; text-transform: uppercase;">Jam Logs</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Personal Profile Details -->
+  <div class="col-lg-7">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <h5 class="mb-0 fw-bold">Personal & Contact Information</h5>
+        </div>
+      </div>
+      <div class="card-clean-body p-4">
+        <form method="post" class="styled-form">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">System Username</label>
+            <input type="text" value="{{ user.username }}" class="form-control bg-light" disabled>
+            <div class="form-text">System handles are permanent and linked to municipal audit logs.</div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            {% for f in user_form %}
+            <div class="col-md-6 mb-2">
+              <label for="{{ f.id_for_label }}" class="form-label">{{ f.label }}</label>
+              {{ f }}
+              {{ f.errors }}
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="row g-2 mb-3">
+            {% for f in prof_form %}
+            <div class="col-md-6 mb-2">
+              <label for="{{ f.id_for_label }}" class="form-label">{{ f.label }}</label>
+              {{ f }}
+              {{ f.errors }}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="btn btn-primary-command mt-2 px-4">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Save Profile Details
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security & Password -->
+  <div class="col-lg-5">
+    <div class="card card-clean h-100">
+      <div class="card-clean-header">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-warning"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <h5 class="mb-0 fw-bold">Account Security & Password</h5>
+        </div>
+      </div>
+      <div class="card-clean-body p-4">
+        <form method="post" action="{% url 'change_password' %}" class="styled-form">
+          {% csrf_token %}
+          {% for f in pw_form %}
+          <div class="mb-3">
+            <label for="{{ f.id_for_label }}" class="form-label">{{ f.label }}</label>
+            {{ f }}
+            {{ f.errors }}
+          </div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-secondary-command mt-2 w-100 justify-content-center">
+            Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

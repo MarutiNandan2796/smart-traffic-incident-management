@@ -1,0 +1,214 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Traffic Flow & Congestion Surveillance{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge bg-warning text-dark px-2 py-1">TRAFFIC FLOW TELEMETRY</span>
+      <span class="text-muted small">&bull; {{ total }} corridor logs</span>
+    </div>
+    <h3 class="fw-bold mb-0">City Congestion & Flow Surveillance</h3>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <!-- Export CSV -->
+    <a href="{% url 'export_congestion_csv' %}?{{ querystring }}" class="btn btn-export-csv btn-sm" title="Download Congestion Logs CSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Export CSV
+    </a>
+
+    <!-- Report Congestion -->
+    <a href="{% url 'congestion_create' %}" class="btn btn-primary-command btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      + Report Congestion
+    </a>
+  </div>
+</div>
+
+<!-- Telemetry Summary Cards -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card card-clean p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-bold">Corridor Average Speed</div>
+          <div class="fs-4 fw-bold text-dark">{{ avg_speed }} <small class="fs-6 text-muted">km/h</small></div>
+        </div>
+        <div class="p-2 rounded bg-light text-primary">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-clean p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-bold">Severe Bottlenecks (Level 4)</div>
+          <div class="fs-4 fw-bold text-danger">{{ severe_count }} Points</div>
+        </div>
+        <div class="p-2 rounded bg-danger-subtle text-danger">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-clean p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-bold">Surveillance Grid Coverage</div>
+          <div class="fs-4 fw-bold text-success">{{ locations.count }} Junctions</div>
+        </div>
+        <div class="p-2 rounded bg-success-subtle text-success">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Toolbar -->
+<form method="get" class="filter-card">
+  <div class="row g-2 align-items-center">
+    <!-- Location Filter -->
+    <div class="col-md-4 col-12">
+      <select name="location" class="form-select form-select-sm">
+        <option value="">All Monitored Locations</option>
+        {% for l in locations %}
+        <option value="{{ l.id }}" {% if request.GET.location == l.id|stringformat:"s" %}selected{% endif %}>{{ l.name }} ({{ l.zone }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Level Filter -->
+    <div class="col-md-3 col-6">
+      <select name="level" class="form-select form-select-sm">
+        <option value="">All Congestion Levels</option>
+        {% for v, l in levels %}
+        <option value="{{ v }}" {% if request.GET.level == v|stringformat:"s" %}selected{% endif %}>Level {{ v }}: {{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Zone Filter -->
+    <div class="col-md-2 col-6">
+      <select name="zone" class="form-select form-select-sm">
+        <option value="">All Zones</option>
+        {% for z, zl in zones %}
+        <option value="{{ z }}" {% if request.GET.zone == z %}selected{% endif %}>{{ z }} Zone</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Buttons -->
+    <div class="col-md-3 col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary-command btn-sm flex-grow-1 justify-content-center">
+        Apply Filter
+      </button>
+      <a href="{% url 'congestion_list' %}" class="btn btn-secondary-command btn-sm">
+        Reset
+      </a>
+    </div>
+  </div>
+</form>
+
+<!-- Congestion Data Table -->
+<div class="card card-clean mb-4">
+  <div class="table-responsive">
+    <table class="table table-command align-middle">
+      <thead>
+        <tr>
+          <th>Corridor Location</th>
+          <th>Congestion Density</th>
+          <th style="min-width: 170px;">Telemetry Speed</th>
+          <th>Identified Cause</th>
+          <th>Reported At</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page %}
+        <tr>
+          <td>
+            <strong>{{ c.location.name }}</strong><br>
+            <span class="badge bg-light text-secondary border small">{{ c.location.zone }} Zone</span>
+            {% if c.notes %}<br><small class="text-muted italic">{{ c.notes }}</small>{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-status lvl-{{ c.level }}">
+              <span class="pulse-dot"></span> Level {{ c.level }}: {{ c.get_level_display }}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold {% if c.average_speed < 20 %}text-danger{% elif c.average_speed < 35 %}text-warning{% else %}text-success{% endif %}">
+                {{ c.average_speed }} km/h
+              </span>
+              <small class="text-muted">
+                {% if c.average_speed < 20 %}Severe Delay{% elif c.average_speed < 35 %}Slowdown{% else %}Normal{% endif %}
+              </small>
+            </div>
+            <div class="speed-meter-track">
+              <div class="speed-meter-fill {% if c.average_speed < 20 %}bg-danger{% elif c.average_speed < 35 %}bg-warning{% else %}bg-success{% endif %}"
+                   style="width: {% widthratio c.average_speed 80 100 %}%;"></div>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-secondary-subtle text-secondary border small">
+              {{ c.cause }}
+            </span>
+          </td>
+          <td>
+            <span class="text-dark">{{ c.reported_at|date:"d M Y" }}</span><br>
+            <small class="text-muted">{{ c.reported_at|date:"h:i A" }}</small>
+          </td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-1">
+              <a href="{% url 'accident_list' %}?location={{ c.location.id }}" class="btn btn-outline-primary btn-sm" title="View accidents at this location">
+                Accidents &rarr;
+              </a>
+              {% if user.is_staff or c.reporter_id == user.id %}
+              <form method="post" action="{% url 'congestion_delete' c.pk %}" onsubmit="return confirm('Delete this congestion log?');" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete record">
+                  &times;
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5 text-muted">
+            <p class="mb-0">No congestion records matching criteria.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination Controls -->
+{% if page.paginator.num_pages > 1 %}
+<div class="d-flex justify-content-between align-items-center">
+  <small class="text-muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</small>
+  <nav>
+    <ul class="pagination pagination-sm mb-0">
+      {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page.previous_page_number }}">Previous</a></li>
+      {% endif %}
+      <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+      {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page.next_page_number }}">Next</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endif %}
+{% endblock %}

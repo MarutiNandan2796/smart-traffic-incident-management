@@ -1,0 +1,25 @@
+{% extends 'management_app/base.html' %}
+{% block title %}Control Room{% endblock %}
+{% block content %}
+<section class="monitor-header control-room-header mb-4">
+  <div><span class="eyebrow"><span class="pulse-dot"></span> STAFF OPERATIONS</span><h1>Control room</h1><p class="mb-0">Search and manage every traffic signal in one place.</p></div>
+  <a class="btn btn-light" href="/admin/">Open full admin &rarr;</a>
+</section>
+<form class="admin-search card mb-4" method="get">
+  <label for="adminSearch" class="visually-hidden">Search traffic records</label>
+  <div class="input-group"><span class="input-group-text">Search</span><input id="adminSearch" class="form-control" type="search" name="q" value="{{ query }}" placeholder="Accident, location, alert or congestion..."><button class="btn btn-primary" type="submit">Find records</button>{% if query %}<a class="btn btn-outline-secondary" href="{% url 'control_room' %}">Clear</a>{% endif %}</div>
+</form>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card admin-stat"><strong>{{ counts.accidents }}</strong><span>Accidents</span></div></div>
+  <div class="col-6 col-lg-3"><div class="card admin-stat"><strong>{{ counts.congestion }}</strong><span>Traffic reports</span></div></div>
+  <div class="col-6 col-lg-3"><div class="card admin-stat"><strong>{{ counts.alerts }}</strong><span>Alerts</span></div></div>
+  <div class="col-6 col-lg-3"><div class="card admin-stat"><strong>{{ counts.locations }}</strong><span>Locations</span></div></div>
+</div>
+{% if query %}<p class="eyebrow mb-3">Search results for “{{ query }}”</p>{% endif %}
+<div class="row g-4">
+  <div class="col-lg-6"><section class="card admin-results"><h5>Accidents</h5>{% for item in accidents %}<a class="admin-result" href="{% url 'accident_detail' item.pk %}"><span><strong>{{ item.title }}</strong><small>{{ item.location.name }} · {{ item.severity }}</small></span><span>&rarr;</span></a>{% empty %}<p class="text-muted small mb-0">No accident records found.</p>{% endfor %}</section></div>
+  <div class="col-lg-6"><section class="card admin-results"><h5>Congestion</h5>{% for item in congestion %}<a class="admin-result" href="{% url 'congestion_list' %}"><span><strong>{{ item.location.name }}</strong><small>{{ item.get_level_display }} · {{ item.average_speed }} km/h · {{ item.cause }}</small></span><span>&rarr;</span></a>{% empty %}<p class="text-muted small mb-0">No congestion records found.</p>{% endfor %}</section></div>
+  <div class="col-lg-6"><section class="card admin-results"><h5>Alerts</h5>{% for item in alerts %}<a class="admin-result" href="{% url 'alert_list' %}"><span><strong>{{ item.title }}</strong><small>{{ item.priority }} · {% if item.is_active %}Active{% else %}Closed{% endif %}</small></span><span>&rarr;</span></a>{% empty %}<p class="text-muted small mb-0">No alerts found.</p>{% endfor %}</section></div>
+  <div class="col-lg-6"><section class="card admin-results"><h5>Locations</h5>{% for item in locations %}<a class="admin-result" href="/admin/management_app/location/{{ item.pk }}/change/"><span><strong>{{ item.name }}</strong><small>{{ item.zone }} zone</small></span><span>&rarr;</span></a>{% empty %}<p class="text-muted small mb-0">No locations found.</p>{% endfor %}</section></div>
+</div>
+{% endblock %}

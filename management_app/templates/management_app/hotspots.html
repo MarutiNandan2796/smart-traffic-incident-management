@@ -1,0 +1,150 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Safety Hotspot Analysis & Risk Matrix{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge bg-danger text-white px-2 py-1">SURVEILLANCE RISK ENGINE</span>
+      <span class="text-muted small">&bull; 30-Day Multi-Factor Weighted Scoring</span>
+    </div>
+    <h3 class="fw-bold mb-0">High-Risk Junctions & Safety Directives</h3>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 no-print">
+    <!-- Print Plan -->
+    <button type="button" class="btn btn-secondary-command btn-sm" onclick="window.print();" title="Print action plan">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Print Directives
+    </button>
+
+    <!-- Export Action Plan CSV -->
+    <a href="{% url 'export_hotspots_csv' %}{% if selected_zone %}?zone={{ selected_zone }}{% endif %}" class="btn btn-export-csv btn-sm" title="Download Hotspots Action Plan CSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Export CSV Plan
+    </a>
+  </div>
+</div>
+
+<!-- Methodology Info Banner -->
+<div class="card card-clean mb-3 border-danger border-opacity-25" style="background: linear-gradient(to right, #fff1f2, #f8fafc);">
+  <div class="card-clean-body py-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+      <div>
+        <strong class="text-danger">Algorithmic Scoring Matrix:</strong>
+        <span class="text-secondary small ms-1">Risk Score = (Accident Points &times; 2) + (Congestion Level &times; Reports &times; 0.5). Fatalities carry 5x weight to prioritize life-saving civil interventions.</span>
+      </div>
+      <div class="d-flex gap-3 small text-muted">
+        <span><strong>{{ stats.total_hotspots }}</strong> Junctions Ranked</span>
+        <span class="text-danger"><strong>{{ stats.critical_fatals }}</strong> Fatal Collisions</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zone Filter Pills -->
+<div class="d-flex flex-wrap gap-2 mb-3 no-print">
+  <a href="{% url 'hotspots' %}" class="btn btn-sm {% if not selected_zone %}btn-dark{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    All City Zones
+  </a>
+  {% for z, zl in zones %}
+  <a href="{% url 'hotspots' %}?zone={{ z }}" class="btn btn-sm {% if selected_zone == z %}btn-primary{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    {{ z }} Zone
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Hotspot Ranked Table -->
+<div class="card card-clean mb-4">
+  <div class="table-responsive">
+    <table class="table table-command align-middle">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Rank</th>
+          <th>Corridor Location</th>
+          <th>Collisions (30d)</th>
+          <th>Fatal Casualties</th>
+          <th>Congestion Density</th>
+          <th>Avg Flow Speed</th>
+          <th>Risk Score</th>
+          <th>Recommended Safety Interventions</th>
+          <th class="text-end no-print">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="{% if r.score >= 20 %}bg-danger bg-opacity-10{% elif r.score >= 15 %}bg-warning bg-opacity-10{% endif %}">
+          <td>
+            <span class="badge {% if forloop.counter <= 3 %}bg-danger{% else %}bg-secondary{% endif %} rounded-circle" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;">
+              {{ forloop.counter }}
+            </span>
+          </td>
+          <td>
+            <strong class="text-dark d-block">{{ r.location.name }}</strong>
+            <span class="badge bg-light text-secondary border small">{{ r.location.zone }} Zone</span>
+          </td>
+          <td>
+            <strong class="fs-6">{{ r.accidents }}</strong>
+            <small class="text-muted d-block">total incidents</small>
+          </td>
+          <td>
+            {% if r.fatal > 0 %}
+            <span class="badge badge-status badge-Fatal">
+              <span class="pulse-dot"></span> {{ r.fatal }} Fatal
+            </span>
+            {% else %}
+            <span class="text-muted small">0 fatal</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge lvl-{{ r.avg_level|floatformat:0 }} small">
+              Level {{ r.avg_level }}
+            </span>
+          </td>
+          <td>
+            <span class="fw-semibold {% if r.avg_speed < 20 %}text-danger{% elif r.avg_speed < 35 %}text-warning{% else %}text-success{% endif %}">
+              {{ r.avg_speed }} km/h
+            </span>
+          </td>
+          <td>
+            <span class="badge {% if r.score >= 18 %}bg-danger{% elif r.score >= 10 %}bg-warning text-dark{% else %}bg-primary{% endif %} rounded-pill px-2 py-1 fs-6">
+              {{ r.score }}
+            </span>
+          </td>
+          <td style="max-width: 320px;">
+            <ul class="mb-0 ps-3 small text-secondary">
+              {% for t in r.tips %}
+              <li class="mb-1">
+                {% if 'camera' in t or 'junction' in t %}
+                📷 <strong class="text-dark">{{ t }}</strong>
+                {% elif 'police' in t or 'signal' in t %}
+                👮 <span class="text-dark">{{ t }}</span>
+                {% elif 'route' in t %}
+                📢 <span class="text-dark">{{ t }}</span>
+                {% else %}
+                ⚠️ {{ t }}
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td class="text-end no-print">
+            <a href="{% url 'accident_list' %}?location={{ r.location.id }}" class="btn btn-outline-primary btn-sm" title="View all incidents logged at this junction">
+              Incidents &rarr;
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center py-5 text-muted">
+            No hotspots detected for the selected zone criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

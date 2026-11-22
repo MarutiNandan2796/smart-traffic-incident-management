@@ -1,0 +1,317 @@
+{% extends 'management_app/base.html' %}
+{% load static %}
+{% block title %}Road Accident Registry{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge bg-danger text-white px-2 py-1">INCIDENT REGISTRY</span>
+      <span class="text-muted small">&bull; {{ total }} records matching criteria</span>
+    </div>
+    <h3 class="fw-bold mb-0">Road Accident Investigations</h3>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <!-- View Switcher (Table vs Grid) -->
+    <div class="btn-group btn-group-sm" role="group">
+      <button type="button" class="btn btn-outline-secondary active" id="btnTableView" title="Table View">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="btnGridView" title="Card Grid View">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      </button>
+    </div>
+
+    <!-- Export to CSV -->
+    <a href="{% url 'export_accidents_csv' %}?{{ querystring }}" class="btn btn-export-csv btn-sm" title="Download filtered accidents CSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Export CSV
+    </a>
+
+    <!-- Add Accident -->
+    <a href="{% url 'accident_create' %}" class="btn btn-primary-command btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      + Report Accident
+    </a>
+  </div>
+</div>
+
+<!-- Quick Status Filter Chips -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{% url 'accident_list' %}" class="btn btn-sm {% if not request.GET.status and not request.GET.severity and not request.GET.mine %}btn-dark{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    All ({{ stats.total }})
+  </a>
+  {% if user.is_authenticated %}
+  <a href="{% url 'accident_list' %}?mine=1" class="btn btn-sm {% if request.GET.mine == '1' %}btn-primary text-white{% else %}btn-outline-primary bg-white{% endif %} py-1 px-3 rounded-pill">
+    👤 My Submissions ({{ stats.mine }})
+  </a>
+  {% endif %}
+  <a href="{% url 'accident_list' %}?status=Reported" class="btn btn-sm {% if request.GET.status == 'Reported' %}btn-primary{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    🔵 Reported ({{ stats.open }})
+  </a>
+  <a href="{% url 'accident_list' %}?status=Under Review" class="btn btn-sm {% if request.GET.status == 'Under Review' %}btn-info text-white{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    🟡 Under Review ({{ stats.review }})
+  </a>
+  <a href="{% url 'accident_list' %}?severity=Fatal" class="btn btn-sm {% if request.GET.severity == 'Fatal' %}btn-danger{% else %}btn-outline-danger bg-white{% endif %} py-1 px-3 rounded-pill">
+    🔴 Fatal Cases ({{ stats.fatal }})
+  </a>
+  <a href="{% url 'accident_list' %}?status=Resolved" class="btn btn-sm {% if request.GET.status == 'Resolved' %}btn-success{% else %}btn-outline-secondary bg-white{% endif %} py-1 px-3 rounded-pill">
+    🟢 Resolved ({{ stats.resolved }})
+  </a>
+</div>
+
+<!-- Advanced Search & Filter Card -->
+<form method="get" class="filter-card">
+  <div class="row g-2 align-items-center">
+    <!-- Keyword Search -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted border-end-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </span>
+        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control border-start-0" placeholder="Search title, details or place...">
+      </div>
+    </div>
+
+    <!-- Severity Filter -->
+    <div class="col-lg-2 col-md-3 col-6">
+      <select name="severity" class="form-select form-select-sm">
+        <option value="">All Severities</option>
+        {% for v, l in severities %}
+        <option value="{{ v }}" {% if request.GET.severity == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Status Filter -->
+    <div class="col-lg-2 col-md-3 col-6">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All Statuses</option>
+        {% for v, l in statuses %}
+        <option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Location Filter -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <select name="location" class="form-select form-select-sm">
+        <option value="">All Locations</option>
+        {% for l in locations %}
+        <option value="{{ l.id }}" {% if request.GET.location == l.id|stringformat:"s" %}selected{% endif %}>{{ l.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Zone Filter -->
+    <div class="col-lg-1 col-md-4 col-6">
+      <select name="zone" class="form-select form-select-sm">
+        <option value="">Zone</option>
+        {% for z, zl in zones %}
+        <option value="{{ z }}" {% if request.GET.zone == z %}selected{% endif %}>{{ z }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-lg-2 col-md-4 col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary-command btn-sm flex-grow-1 justify-content-center">
+        Filter
+      </button>
+      <a href="{% url 'accident_list' %}" class="btn btn-secondary-command btn-sm" title="Clear all filters">
+        Reset
+      </a>
+    </div>
+  </div>
+</form>
+
+<!-- Table View -->
+<div id="tableViewContainer" class="card card-clean mb-4">
+  <div class="table-responsive">
+    <table class="table table-command align-middle">
+      <thead>
+        <tr>
+          <th>Incident Title</th>
+          <th>Location & Zone</th>
+          <th>Occurred When</th>
+          <th>Impact</th>
+          <th>Severity</th>
+          <th>Investigation Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in page %}
+        <tr>
+          <td>
+            <a href="{% url 'accident_detail' a.pk %}" class="fw-bold text-dark d-block">
+              #{{ a.id }} &bull; {{ a.title }}
+            </a>
+            <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">
+              {{ a.description|truncatewords:8 }}
+            </small>
+          </td>
+          <td>
+            <strong>{{ a.location.name }}</strong><br>
+            <span class="badge bg-light text-secondary border small">{{ a.location.zone }} Zone</span>
+          </td>
+          <td>
+            <span class="text-dark">{{ a.occurred_at|date:"d M Y" }}</span><br>
+            <small class="text-muted">{{ a.occurred_at|date:"h:i A" }}</small>
+          </td>
+          <td>
+            <span class="small d-block">🚗 {{ a.vehicles_involved }} vehicle(s)</span>
+            <span class="small {% if a.injuries > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+              🩹 {{ a.injuries }} injured
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-status badge-{{ a.severity }}">
+              <span class="pulse-dot"></span> {{ a.severity }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-status badge-{{ a.status|cut:' ' }}">
+              {{ a.status }}
+            </span>
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a href="{% url 'accident_detail' a.pk %}" class="btn btn-outline-primary btn-sm" title="Inspect report">
+                Inspect
+              </a>
+              {% if user.is_staff or a.reporter_id == user.id %}
+              <a href="{% url 'accident_update' a.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit report">
+                Edit
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5 text-muted">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            <h6 class="fw-bold mb-1">No matching incidents found</h6>
+            <p class="small text-muted mb-3">Try adjusting your keyword, severity or location filters.</p>
+            <a href="{% url 'accident_list' %}" class="btn btn-outline-primary btn-sm">Clear Active Filters</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Grid View (Hidden by default, toggleable) -->
+<div id="gridViewContainer" class="row g-3 mb-4" style="display: none;">
+  {% for a in page %}
+  <div class="col-md-6 col-lg-4 col-xl-3">
+    <div class="card card-clean h-100">
+      <div class="card-clean-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge badge-status badge-{{ a.severity }}">
+            <span class="pulse-dot"></span> {{ a.severity }}
+          </span>
+          <span class="badge badge-status badge-{{ a.status|cut:' ' }}">
+            {{ a.status }}
+          </span>
+        </div>
+        <h6 class="fw-bold text-dark mb-1">
+          <a href="{% url 'accident_detail' a.pk %}" class="text-dark">{{ a.title }}</a>
+        </h6>
+        <div class="small text-muted mb-2">📍 {{ a.location.name }} ({{ a.location.zone }})</div>
+        <p class="small text-secondary mb-3 flex-grow-1">{{ a.description|truncatewords:12 }}</p>
+        
+        <div class="p-2 rounded bg-light border small mb-3">
+          <div class="d-flex justify-content-between">
+            <span>Vehicles: <strong>{{ a.vehicles_involved }}</strong></span>
+            <span>Injuries: <strong class="{% if a.injuries > 0 %}text-danger{% endif %}">{{ a.injuries }}</strong></span>
+          </div>
+          <div class="text-muted mt-1" style="font-size: 0.72rem;">{{ a.occurred_at|date:"d M Y, h:i A" }}</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{% url 'accident_detail' a.pk %}" class="btn btn-outline-primary btn-sm flex-grow-1">
+            View Details &rarr;
+          </a>
+          {% if user.is_staff or a.reporter_id == user.id %}
+          <a href="{% url 'accident_update' a.pk %}" class="btn btn-outline-secondary btn-sm">
+            Edit
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5 text-muted">No records match your filters.</div>
+  {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+{% if page.paginator.num_pages > 1 %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+  <div class="small text-muted">
+    Showing page <strong>{{ page.number }}</strong> of <strong>{{ page.paginator.num_pages }}</strong> ({{ total }} total incidents)
+  </div>
+  <nav aria-label="Page navigation">
+    <ul class="pagination pagination-sm mb-0">
+      {% if page.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page=1" title="First Page">&laquo;&laquo;</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page={{ page.previous_page_number }}">Previous</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      <li class="page-item active">
+        <span class="page-link">{{ page.number }}</span>
+      </li>
+
+      {% if page.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page={{ page.next_page_number }}">Next</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page={{ page.paginator.num_pages }}" title="Last Page">&raquo;&raquo;</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle Table and Grid views
+const btnTable = document.getElementById('btnTableView');
+const btnGrid = document.getElementById('btnGridView');
+const tableCont = document.getElementById('tableViewContainer');
+const gridCont = document.getElementById('gridViewContainer');
+
+btnTable.addEventListener('click', () => {
+  btnTable.classList.add('active');
+  btnGrid.classList.remove('active');
+  tableCont.style.display = 'block';
+  gridCont.style.display = 'none';
+});
+
+btnGrid.addEventListener('click', () => {
+  btnGrid.classList.add('active');
+  btnTable.classList.remove('active');
+  tableCont.style.display = 'none';
+  gridCont.style.display = 'flex';
+});
+</script>
+{% endblock %}
