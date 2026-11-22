@@ -18,9 +18,6 @@ env/
 ENV/
 .venv/
 
-# Staticfiles
-staticfiles/
-
 # IDE & OS
 .vscode/
 .idea/
